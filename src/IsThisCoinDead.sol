@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity 0.8.28;
 import "openzeppelin/access/Ownable.sol";
 
 contract IsThisCoinDead is Ownable {
@@ -8,6 +8,7 @@ contract IsThisCoinDead is Ownable {
     mapping(bytes32 => uint256) public totalVoteDead;
     mapping(bytes32 => uint256) public totalVoteAlive;
 
+    event VoteFeeChanged(uint256 newVoteFee);
     event VoteDead(address voter, bytes32 coin);
     event VoteAlive(address voter, bytes32 coin);
 
@@ -15,27 +16,32 @@ contract IsThisCoinDead is Ownable {
         voteFee = _voteFee;
     }
 
-    function voteDead(bytes32 coin) external payable {
+    function setVoteFee(uint256 _voteFee) external onlyOwner {
+        voteFee = _voteFee;
+        emit VoteFeeChanged(_voteFee);
+    }
+
+    function voteDead(bytes32 _coin) external payable {
         require(msg.value == voteFee, "Incorrect fee");
-        totalVoteDead[coin] += 1;
+        totalVoteDead[_coin] += 1;
 
-        emit VoteDead(msg.sender, coin);
+        emit VoteDead(msg.sender, _coin);
     }
 
-    function voteAlive(bytes32 coin) external payable {
+    function voteAlive(bytes32 _coin) external payable {
         require(msg.value == voteFee, "Incorrect fee");
-        totalVoteAlive[coin] += 1;
+        totalVoteAlive[_coin] += 1;
 
-        emit VoteAlive(msg.sender, coin);
+        emit VoteAlive(msg.sender, _coin);
     }
 
-    function isThisCoinDead(bytes32 coin) external view returns (uint256, uint256) {
-        return (totalVoteDead[coin], totalVoteAlive[coin]);
-    }
-
-    function withdraw(address receiver) external onlyOwner {
+    function withdraw(address _receiver) external onlyOwner {
         uint256 balance = address(this).balance;
         require(balance > 0, "No balance to withdraw");
-        payable(receiver).transfer(balance);
+        payable(_receiver).transfer(balance);
+    }
+
+    function isThisCoinDead(bytes32 _coin) external view returns (uint256, uint256) {
+        return (totalVoteDead[_coin], totalVoteAlive[_coin]);
     }
 }
